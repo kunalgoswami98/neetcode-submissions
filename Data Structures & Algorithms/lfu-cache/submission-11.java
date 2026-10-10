@@ -1,0 +1,83 @@
+class LFUCache {
+    class Node{
+        int key;
+        int value;
+        int frequency;
+
+        Node(int key, int value, int frequency){
+            this.key = key;
+            this.value = value;
+            this.frequency = frequency;
+        }
+    }
+    Map<Integer, Node> keyMapping;
+    Map<Integer, LinkedHashSet<Integer>> frequencyMap;
+    int maxCapacity;
+    int minFrequency;
+    public LFUCache(int capacity) {
+        keyMapping = new HashMap<>();
+        frequencyMap = new HashMap<>();
+        this.maxCapacity = capacity;
+        this.minFrequency = Integer.MAX_VALUE;
+    }
+    
+    public int get(int key) {
+        if(!keyMapping.containsKey(key)) return -1;
+        Node nodeValue = keyMapping.get(key);
+        increaseFrequency(nodeValue);
+        return nodeValue.value;
+    }
+    
+    public void put(int key, int value) {
+        //if key already present
+        if(keyMapping.containsKey(key)) {
+            Node nodeValue = keyMapping.get(key);
+            nodeValue.value = value;
+            increaseFrequency(nodeValue);
+        }
+        else {
+            //if maxCapacity reached
+            if(keyMapping.size() == maxCapacity){
+                LinkedHashSet<Integer> keys = frequencyMap.get(minFrequency);
+                int removalKey = keys.iterator().next();
+
+                keys.remove(removalKey);
+                keyMapping.remove(removalKey);
+
+                if (keys.isEmpty()) {
+                    frequencyMap.remove(minFrequency);
+                }
+            }
+            Node newNode = new Node(key, value, 1);
+            minFrequency = 1;
+            frequencyMap.computeIfAbsent(newNode.frequency, k -> new LinkedHashSet<>()).add(key);
+            keyMapping.put(key, newNode);
+        }
+    }
+
+    private void increaseFrequency(Node node){
+        int oldFrequency = node.frequency;
+
+        LinkedHashSet<Integer> keys = frequencyMap.get(oldFrequency);
+        keys.remove(node.key);
+
+        if(keys.isEmpty()){
+            frequencyMap.remove(oldFrequency);
+            if(minFrequency == oldFrequency){
+                minFrequency += 1;
+            }
+        }
+        
+        node.frequency++;
+        frequencyMap.computeIfAbsent(node.frequency, k -> new LinkedHashSet<>()).add(node.key);
+        keyMapping.put(node.key, node);
+    }
+
+}
+
+/**
+ * Your LFUCache object will be instantiated and called as such:
+ * LFUCache obj = new LFUCache(capacity);
+ * int param_1 = obj.get(key);
+ * obj.put(key,value);
+ */
